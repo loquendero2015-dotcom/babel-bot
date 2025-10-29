@@ -194,3 +194,8 @@ client.on('messageCreate', async (message) => {
 
 client.once('ready', () => console.log(`✅ Bot listo como ${client.user.tag}`));
 client.login(process.env.DISCORD_TOKEN);
+// Servidor fantasma para Koyeb ❤️
+import express from "express";
+const app = express();
+app.get("/", (req, res) => res.send("Babel Bot is alive!"));
+app.listen(8000, () => console.log("✅ Keepalive server running on port 8000"));
