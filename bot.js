@@ -104,9 +104,24 @@ client.on("messageCreate", async (message) => {
     const state = getGuildState(db, message.guild.id);
 
     // --- 🏛️ Comandos de la Torre ---
-    if (message.content.startsWith("xbabel")) {
-      const args = message.content.trim().split(/\s+/);
-      const sub = (args[1] || "").toLowerCase();
+    if (message.content.startsWith("xbabel") || message.content.startsWith("xbs")) {
+  const args = message.content.trim().split(/\s+/);
+  const cmd = args[0].toLowerCase();
+  const sub = (args[1] || "").toLowerCase();
+
+  // si usan "xbs" sin argumentos, tratamos como "xbabel status"
+  if (cmd === "xbs" && !sub) {
+    const embed = buildStatusEmbed(
+      message.guild.name,
+      state.total,
+      state.meta,
+      state.announceChannelId
+        ? message.guild.channels.cache.get(state.announceChannelId)?.name ||
+            state.announceChannelId
+        : null
+    );
+    return message.reply({ embeds: [embed] });
+  }
 
       if (sub === "status") {
         const embed = buildStatusEmbed(
