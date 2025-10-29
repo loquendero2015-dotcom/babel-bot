@@ -194,8 +194,18 @@ client.on('messageCreate', async (message) => {
 
 client.once('ready', () => console.log(`✅ Bot listo como ${client.user.tag}`));
 client.login(process.env.DISCORD_TOKEN);
-// Servidor fantasma para Koyeb ❤️
+// 🌐 Servidor fantasma para Koyeb ❤️
 import express from "express";
 const app = express();
-app.get("/", (req, res) => res.send("Babel Bot is alive!"));
-app.listen(8000, () => console.log("✅ Keepalive server running on port 8000"));
+
+app.get("/", (req, res) => {
+  res.send("✅ Babel Bot is alive and responding!");
+});
+
+// Forzamos que el servidor se quede escuchando incluso si Koyeb tarda
+app.listen(process.env.PORT || 8000, "0.0.0.0", () => {
+  console.log("✅ Keepalive server running on port", process.env.PORT || 8000);
+});
+
+// Pequeño keep-alive para mantener conexión activa con Discord
+setInterval(() => console.log("💤 Ping de vida: Babel Bot sigue activo"), 60000);
