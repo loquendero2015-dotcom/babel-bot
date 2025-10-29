@@ -202,8 +202,17 @@ app.get("/", (req, res) => {
   res.send("✅ Babel Bot is alive and responding!");
 });
 
+// Endpoint específico para Koyeb health checks
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
+  res.send("✅ Babel Bot is alive and responding!");
+});
+
 // Forzamos que el servidor se quede escuchando incluso si Koyeb tarda
-app.listen(process.env.PORT || 8000, "0.0.0.0", () => {
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => console.log(`✅ Keepalive server running on port ${PORT}`));
   console.log("✅ Keepalive server running on port", process.env.PORT || 8000);
 });
 
