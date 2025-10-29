@@ -162,45 +162,89 @@ client.on("messageCreate", async (message) => {
     }
 
     // --- 💎 Detección automática de donaciones ---
-    const match = message.content.match(
-      /^xgift\s+<@!?(\d+)>?\s+(?:"?emp"?|emperium|504)\s*x\s*(\d+)/i
-    );
-    if (!match) return;
+const match = message.content.match(
+  /^xgift\s+<@!?(\d+)>?\s+(?:"?emp"?|emperium|504)\s*x\s*(\d+)/i
+);
+if (!match) return;
 
-    const amount = parseInt(match[2]);
-    if (Number.isNaN(amount) || amount <= 0) return;
+const amount = parseInt(match[2]);
+if (Number.isNaN(amount) || amount <= 0) return;
 
-    state.total += amount;
-    state.lastUpdated = Date.now();
-    await writeDB(db);
+// 🕐 Esperar respuesta del bot Nekotina antes de sumar
+const filter = (m) =>
+  m.author.id === "429457053791158281" && // ID real de Nekotina
+  m.channel.id === message.channel.id;
 
-    const remain = formatRemaining(state.total, state.meta);
-    const userTag = message.member ? `${message.member}` : message.author.username;
+try {
+  const collected = await message.channel.awaitMessages({
+    filter,
+    max: 1,
+    time: 4000, // Espera 4 segundos
+  });
 
-    // 💬 Mensaje local
-    await message.channel.send(
-      `💎 ${userTag} donó **${amount}** Emperiums para la Torre de Babel!\n📊 Donados: **${state.total}/${state.meta}** | Faltan: **${remain}**`
-    );
+  // ⚠️ Si Nekotina respondió con error, no sumar nada
+  if (collected.size > 0) {
+    const reply = collected.first().content.toLowerCase();
+    if (
+      reply.includes("no posees ese item") ||
+      reply.includes("la cantidad que intentas regalar")
+    ) {
+      console.log("❌ Donación cancelada: Nekotina respondió con error.");
+      return;
+    }
+  }
 
-    // 📢 Anuncio global si hay canal seteado
+  // ✅ Si no hubo error, procesar la donación normalmente
+  state.total += amount;
+  state.lastUpdated = Date.now();
+  await writeDB(db);
+
+  const remain = formatRemaining(state.total, state.meta);
+  const userTag = message.member ? `${message.member}` : message.author.username;
+
+  // 💬 Mensaje local
+  await message.channel.send(
+    `💎 ${userTag} donó **${amount}** Emperiums para la Torre de Babel!\n📊 Donados: **${state.total}/${state.meta}** | Faltan: **${remain}**`
+  );
+
+  // 📢 Anuncio global si hay canal seteado
+  if (state.announceChannelId) {
+    const announce = message.guild.channels.cache.get(state.announceChannelId);
+    if (announce && announce.isTextBased()) {
+      const embed = new EmbedBuilder()
+        .setTitle("💠 Nueva Donación")
+        .setDescription(
+          `${userTag} ha contribuido con **${amount}** Emperiums para abrir la Torre de Babel.`
+        )
+        .addFields(
+          { name: "Donados", value: `${state.total}`, inline: true },
+          { name: "Meta", value: `${state.meta}`, inline: true },
+          { name: "Faltan", value: `${remain}`, inline: true }
+        )
+        .setColor(0xffd700)
+        .setTimestamp();
+      await announce.send({ embeds: [embed] });
+    }
+  }
+
+  // 🏛️ Meta alcanzada
+  if (state.total >= state.meta) {
     if (state.announceChannelId) {
       const announce = message.guild.channels.cache.get(state.announceChannelId);
       if (announce && announce.isTextBased()) {
-        const embed = new EmbedBuilder()
-          .setTitle("💠 Nueva Donación")
-          .setDescription(
-            `${userTag} ha contribuido con **${amount}** Emperiums para abrir la Torre de Babel.`
-          )
-          .addFields(
-            { name: "Donados", value: `${state.total}`, inline: true },
-            { name: "Meta", value: `${state.meta}`, inline: true },
-            { name: "Faltan", value: `${remain}`, inline: true }
-          )
-          .setColor(0xffd700)
-          .setTimestamp();
-        await announce.send({ embeds: [embed] });
+        await announce.send(
+          "🏛️ **¡LA TORRE DE BABEL SE ABRIÓ!** 🎉\n🔥 Se alcanzaron los **120 Emperiums** necesarios para su apertura.\n✨ ¡Gracias a todos los Nekitos que aportaron, eso rony! 🩷"
+        );
       }
     }
+    state.total = 0;
+    state.lastUpdated = Date.now();
+    await writeDB(db);
+  }
+
+} catch (err) {
+  console.error("🔥 Error esperando respuesta de Nekotina:", err);
+}
 
     // 🏛️ Meta alcanzada
     if (state.total >= state.meta) {
