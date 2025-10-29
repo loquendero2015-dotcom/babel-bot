@@ -2,7 +2,8 @@
 // discord.js v14 – Node 18+
 // Autor: Misato para Nico ❤️
 
-require('dotenv').config();
+import dotenv from "dotenv";
+dotenv.config();
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const fsp = require('fs/promises');
