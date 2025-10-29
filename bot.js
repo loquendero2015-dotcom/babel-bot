@@ -90,6 +90,7 @@ function buildStatusEmbed(guildName, total, meta, channelId) {
     .setTimestamp();
 }
 
+// 🧩 Detección de comandos
 client.on("messageCreate", async (message) => {
   try {
     if (!message.guild || message.author.bot) return;
@@ -141,6 +142,7 @@ client.on("messageCreate", async (message) => {
   } catch (err) { console.error("Error (parte 1):", err); }
 });
 
+// 🧩 Confirmación de donaciones
 client.on("messageCreate", async (message) => {
   try {
     if (!message.guild) return;
@@ -156,6 +158,7 @@ client.on("messageCreate", async (message) => {
 
     const keys = [...pending.keys()].filter(k => k.startsWith(`${message.channel.id}:`));
     if (keys.length === 0) return;
+
     const now = Date.now();
     let bestKey = null, bestAt = 0;
     for (const k of keys) {
@@ -182,61 +185,54 @@ client.on("messageCreate", async (message) => {
     }
 
     if (isSuccess) {
-  state.total += p.amount;
-  state.lastUpdated = Date.now();
-  await writeDB(db);
+      state.total += p.amount;
+      state.lastUpdated = Date.now();
+      await writeDB(db);
 
-  const remain = formatRemaining(state.total, state.meta);
-  const user = await guild.members.fetch(userId).catch(() => null);
-  const userTag = user ? `${user}` : `<@${userId}>`;
+      const remain = formatRemaining(state.total, state.meta);
+      const user = await guild.members.fetch(userId).catch(() => null);
+      const userTag = user ? `${user}` : `<@${userId}>`;
 
-  // 💬 Mensaje de confirmación en el canal donde donó
-  if (channel) {
-    await channel.send(
-      `💎 ${userTag} aportó **${p.amount}** Emperiums para la apertura de la Torre de Babel!\n` +
-      `📊 Donados: **${state.total}/${state.meta}** | Faltan: **${remain}**`
-    );
-  }
-
-  // 📢 Anuncio global si hay canal seteado
-  if (state.announceChannelId) {
-    const announce = guild.channels.cache.get(state.announceChannelId);
-    if (announce && announce.isTextBased()) {
-      const embed = new EmbedBuilder()
-        .setTitle("💠 Nueva Donación")
-        .setDescription(`${userTag} ha contribuido con **${p.amount}** Emperiums para abrir la Torre de Babel.`)
-        .addFields(
-          { name: "Donados", value: `${state.total}`, inline: true },
-          { name: "Meta", value: `${state.meta}`, inline: true },
-          { name: "Faltan", value: `${remain}`, inline: true }
-        )
-        .setColor(0xFFD700)
-        .setTimestamp();
-      await announce.send({ embeds: [embed] });
-    }
-  }
-
-  // 🏛️ Si alcanzó o superó la meta
-  if (state.total >= state.meta) {
-    if (state.announceChannelId) {
-      const announce = guild.channels.cache.get(state.announceChannelId);
-      if (announce && announce.isTextBased()) {
-        await announce.send(
-          "🏛️ **¡LA TORRE DE BABEL SE ABRIÓ!** 🎉\n" +
-          "🔥 Se alcanzaron los **120 Emperiums** necesarios para su apertura.\n" +
-          "✨ ¡Gracias a todos los Nekitos que aportaron, eso rony!"
+      if (channel) {
+        await channel.send(
+          `💎 ${userTag} aportó **${p.amount}** Emperiums para la apertura de la Torre de Babel!\n` +
+          `📊 Donados: **${state.total}/${state.meta}** | Faltan: **${remain}**`
         );
       }
-    }
 
-    // Reinicio automático
-    state.total = 0;
-    state.lastUpdated = Date.now();
-    await writeDB(db);
-  }
+      if (state.announceChannelId) {
+        const announce = guild.channels.cache.get(state.announceChannelId);
+        if (announce && announce.isTextBased()) {
+          const embed = new EmbedBuilder()
+            .setTitle("💠 Nueva Donación")
+            .setDescription(`${userTag} ha contribuido con **${p.amount}** Emperiums para abrir la Torre de Babel.`)
+            .addFields(
+              { name: "Donados", value: `${state.total}`, inline: true },
+              { name: "Meta", value: `${state.meta}`, inline: true },
+              { name: "Faltan", value: `${remain}`, inline: true }
+            )
+            .setColor(0xFFD700)
+            .setTimestamp();
+          await announce.send({ embeds: [embed] });
+        }
+      }
 
-  pending.delete(bestKey);
-}
+      // 🏛️ Si alcanzó o superó la meta
+      if (state.total >= state.meta) {
+        if (state.announceChannelId) {
+          const announce = guild.channels.cache.get(state.announceChannelId);
+          if (announce && announce.isTextBased()) {
+            await announce.send(
+              "🏛️ **¡LA TORRE DE BABEL SE ABRIÓ!** 🎉\n" +
+              "🔥 Se alcanzaron los **120 Emperiums** necesarios para su apertura.\n" +
+              "✨ ¡Gracias a todos los Nekitos que aportaron, eso rony!"
+            );
+          }
+        }
+        state.total = 0;
+        state.lastUpdated = Date.now();
+        await writeDB(db);
+      }
 
       pending.delete(bestKey);
     }
@@ -248,12 +244,8 @@ client.login(process.env.DISCORD_TOKEN);
 
 // 🌐 Servidor fantasma para Koyeb ❤️
 const app = express();
-app.get("/", (req, res) => {
-  res.send("✅ Babel Bot is alive and responding!");
-});
-app.get("/health", (req, res) => {
-  res.status(200).send("OK");
-});
+app.get("/", (req, res) => res.send("✅ Babel Bot is alive and responding!"));
+app.get("/health", (req, res) => res.status(200).send("OK"));
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`✅ Keepalive server running on port ${PORT}`));
 setInterval(() => console.log("💤 Ping de vida: Babel Bot sigue activo"), 60000);
