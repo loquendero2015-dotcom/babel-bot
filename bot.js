@@ -207,14 +207,8 @@ app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
 
-  res.send("✅ Babel Bot is alive and responding!");
-});
-
-// Forzamos que el servidor se quede escuchando incluso si Koyeb tarda
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`✅ Keepalive server running on port ${PORT}`));
-  console.log("✅ Keepalive server running on port", process.env.PORT || 8000);
-});
 
 // Pequeño keep-alive para mantener conexión activa con Discord
 setInterval(() => console.log("💤 Ping de vida: Babel Bot sigue activo"), 60000);
