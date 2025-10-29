@@ -4,6 +4,7 @@
 
 import dotenv from "dotenv";
 dotenv.config();
+
 import {
   Client,
   GatewayIntentBits,
@@ -11,19 +12,25 @@ import {
   EmbedBuilder,
   PermissionsBitField
 } from "discord.js";
-const fs = require('fs');
-const fsp = require('fs/promises');
-const path = require('path');
+import fs from "fs";
+import fsp from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+import express from "express";
 
-const DATA_DIR = path.join(__dirname, 'data');
-const DB_FILE = path.join(DATA_DIR, 'babel.json');
+// Simular __dirname para módulos ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const DATA_DIR = path.join(__dirname, "data");
+const DB_FILE = path.join(DATA_DIR, "babel.json");
 const DONATION_META_DEFAULT = 120;
 const DONATION_WINDOW_MS = 60 * 1000;
 const NEKOTINA_BOT_ID = process.env.NEKOTINA_BOT_ID || null;
 
-const MSG_SUCCESS = 'Tu item ha sido sacrificado a los dioses nekitos.';
-const MSG_FAIL_1 = 'La cantidad que intentas regalar supera la que posees en tu mochila.';
-const MSG_FAIL_2 = 'No posees ese item en tu mochila.';
+const MSG_SUCCESS = "Tu item ha sido sacrificado a los dioses nekitos.";
+const MSG_FAIL_1 = "La cantidad que intentas regalar supera la que posees en tu mochila.";
+const MSG_FAIL_2 = "No posees ese item en tu mochila.";
 
 const DONATION_CMD = /^xgift\s+<@!?\d+>\s+(?:\"emp\"|emperium|emp|504)\s*x\s*(\d+)\b/i;
 
@@ -39,7 +46,7 @@ async function ensureDB() {
 
 async function readDB() {
   await ensureDB();
-  const raw = await fsp.readFile(DB_FILE, 'utf8');
+  const raw = await fsp.readFile(DB_FILE, "utf8");
   return JSON.parse(raw);
 }
 
@@ -72,55 +79,55 @@ function formatRemaining(total, meta) { return Math.max(meta - total, 0); }
 function buildStatusEmbed(guildName, total, meta, channelId) {
   const remain = formatRemaining(total, meta);
   return new EmbedBuilder()
-    .setTitle('🏛️ Torre de Babel – Progreso')
+    .setTitle("🏛️ Torre de Babel – Progreso")
     .setDescription(`Servidor: **${guildName}**`)
     .addFields(
-      { name: 'Donados', value: `${total} Emperiums`, inline: true },
-      { name: 'Meta', value: `${meta} Emperiums`, inline: true },
-      { name: 'Faltan', value: `${remain} Emperiums`, inline: true },
+      { name: "Donados", value: `${total} Emperiums`, inline: true },
+      { name: "Meta", value: `${meta} Emperiums`, inline: true },
+      { name: "Faltan", value: `${remain} Emperiums`, inline: true }
     )
-    .setFooter({ text: channelId ? `Anunciando en #${channelId}` : 'Canal de anuncios no configurado' })
+    .setFooter({ text: channelId ? `Anunciando en #${channelId}` : "Canal de anuncios no configurado" })
     .setTimestamp();
 }
 
-client.on('messageCreate', async (message) => {
+client.on("messageCreate", async (message) => {
   try {
     if (!message.guild || message.author.bot) return;
 
     const db = await readDB();
     const state = getGuildState(db, message.guild.id);
 
-    if (message.content.startsWith('xbabel')) {
+    if (message.content.startsWith("xbabel")) {
       const args = message.content.trim().split(/\s+/);
-      const sub = (args[1] || '').toLowerCase();
+      const sub = (args[1] || "").toLowerCase();
 
-      if (sub === 'status') {
+      if (sub === "status") {
         const embed = buildStatusEmbed(message.guild.name, state.total, state.meta, state.announceChannelId ? (message.guild.channels.cache.get(state.announceChannelId)?.name || state.announceChannelId) : null);
         return message.reply({ embeds: [embed] });
       }
 
-      if (!hasManageGuild(message.member)) return message.reply('⛔ Necesitás permiso **Manage Server**.');
+      if (!hasManageGuild(message.member)) return message.reply("⛔ Necesitás permiso **Manage Server**.");
 
-      if (sub === 'set' && args[2]) {
+      if (sub === "set" && args[2]) {
         const val = parseInt(args[2]);
-        if (Number.isNaN(val) || val < 0) return message.reply('❓ Usá: `xbabel set <numero>`');
+        if (Number.isNaN(val) || val < 0) return message.reply("❓ Usá: `xbabel set <numero>`");
         state.total = val; state.lastUpdated = Date.now(); await writeDB(db);
         return message.reply(`✅ Total establecido en **${state.total}**. Faltan **${formatRemaining(state.total, state.meta)}**.`);
       }
-      if (sub === 'reset') {
+      if (sub === "reset") {
         state.total = 0; state.lastUpdated = Date.now(); await writeDB(db);
-        return message.reply('🧹 Progreso reiniciado.');
+        return message.reply("🧹 Progreso reiniciado.");
       }
-      if (sub === 'setchannel') {
+      if (sub === "setchannel") {
         const channel = message.mentions.channels.first();
-        if (!channel) return message.reply('📣 Usá: `xbabel setchannel #canal`');
+        if (!channel) return message.reply("📣 Usá: `xbabel setchannel #canal`");
         state.announceChannelId = channel.id; state.lastUpdated = Date.now(); await writeDB(db);
         return message.reply(`📌 Canal de anuncios establecido en ${channel}.`);
       }
-      return message.reply('ℹ️ Comandos: `xbabel status`, `xbabel set <n>`, `xbabel reset`, `xbabel setchannel #canal`');
+      return message.reply("ℹ️ Comandos: `xbabel status`, `xbabel set <n>`, `xbabel reset`, `xbabel setchannel #canal`");
     }
 
-    if (message.content.toLowerCase().startsWith('xgift')) {
+    if (message.content.toLowerCase().startsWith("xgift")) {
       if (!message.mentions.users || message.mentions.users.size === 0) return;
       const m = message.content.match(DONATION_CMD);
       if (!m) return;
@@ -128,13 +135,13 @@ client.on('messageCreate', async (message) => {
       if (Number.isNaN(amount) || amount <= 0) return;
       const key = pendingKey(message.channel.id, message.author.id);
       pending.set(key, { amount, at: Date.now() });
-      await message.react('⏳');
+      await message.react("⏳");
       return;
     }
-  } catch (err) { console.error('Error (parte 1):', err); }
+  } catch (err) { console.error("Error (parte 1):", err); }
 });
 
-client.on('messageCreate', async (message) => {
+client.on("messageCreate", async (message) => {
   try {
     if (!message.guild) return;
     const fromKnownNekotina = NEKOTINA_BOT_ID && message.author?.id === NEKOTINA_BOT_ID;
@@ -159,7 +166,7 @@ client.on('messageCreate', async (message) => {
     if (!bestKey) return;
 
     const p = pending.get(bestKey);
-    const [channelId, userId] = bestKey.split(':');
+    const [channelId, userId] = bestKey.split(":");
     const guild = message.guild;
     const channel = guild.channels.cache.get(channelId);
     const db = await readDB();
@@ -184,11 +191,11 @@ client.on('messageCreate', async (message) => {
         const announce = guild.channels.cache.get(state.announceChannelId);
         if (announce && announce.isTextBased()) {
           const embed = new EmbedBuilder()
-            .setTitle('💎 Nueva donación a la Torre de Babel')
+            .setTitle("💎 Nueva donación a la Torre de Babel")
             .setDescription(`Se ha confirmado una donación de **${p.amount}** Emperiums.`)
             .addFields(
-              { name: 'Total acumulado', value: `${state.total}/${state.meta}`, inline: true },
-              { name: 'Faltan', value: `${remain}`, inline: true }
+              { name: "Total acumulado", value: `${state.total}/${state.meta}`, inline: true },
+              { name: "Faltan", value: `${remain}`, inline: true }
             )
             .setTimestamp();
           await announce.send({ embeds: [embed] });
@@ -196,26 +203,20 @@ client.on('messageCreate', async (message) => {
       }
       pending.delete(bestKey);
     }
-  } catch (err) { console.error('Error (parte 2):', err); }
+  } catch (err) { console.error("Error (parte 2):", err); }
 });
 
-client.once('ready', () => console.log(`✅ Bot listo como ${client.user.tag}`));
+client.once("ready", () => console.log(`✅ Bot listo como ${client.user.tag}`));
 client.login(process.env.DISCORD_TOKEN);
-// 🌐 Servidor fantasma para Koyeb ❤️
-import express from "express";
-const app = express();
 
+// 🌐 Servidor fantasma para Koyeb ❤️
+const app = express();
 app.get("/", (req, res) => {
   res.send("✅ Babel Bot is alive and responding!");
 });
-
-// Endpoint específico para Koyeb health checks
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
-
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`✅ Keepalive server running on port ${PORT}`));
-
-// Pequeño keep-alive para mantener conexión activa con Discord
 setInterval(() => console.log("💤 Ping de vida: Babel Bot sigue activo"), 60000);
