@@ -152,9 +152,12 @@ client.on("messageCreate", async (message) => {
 
     const content = message.content?.trim();
     if (!content) return;
-    const isSuccess = content === MSG_SUCCESS;
-    const isFail = content === MSG_FAIL_1 || content === MSG_FAIL_2;
-    if (!isSuccess && !isFail) return;
+    // 💬 Detección flexible de mensajes de Nekotina (aunque tenga emojis)
+const cleanContent = content.replace(/<:[^>]+>/g, "").trim(); // elimina emojis tipo <:algo:1234>
+const isSuccess = cleanContent.includes("Tu item ha sido sacrificado a los dioses nekitos");
+const isFail = cleanContent.includes("La cantidad que intentas regalar supera la que posees") ||
+               cleanContent.includes("No posees ese item en tu mochila");
+if (!isSuccess && !isFail) return;
 
     const keys = [...pending.keys()].filter(k => k.startsWith(`${message.channel.id}:`));
     if (keys.length === 0) return;
