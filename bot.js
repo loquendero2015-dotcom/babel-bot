@@ -4,7 +4,13 @@
 
 import dotenv from "dotenv";
 dotenv.config();
-const { Client, GatewayIntentBits, Partials, EmbedBuilder, PermissionsBitField } = require('discord.js');
+import {
+  Client,
+  GatewayIntentBits,
+  Partials,
+  EmbedBuilder,
+  PermissionsBitField
+} from "discord.js";
 const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
