@@ -2,7 +2,14 @@
   "name": "babel-bot",
   "version": "1.0.0",
   "description": "Contador de Emperiums para la Torre de Babel - Nekotina",
+  "type": "module",
   "main": "bot.js",
-  "scripts": { "start": "node bot.js" },
-  "dependencies": { "discord.js": "^14.14.1", "dotenv": "^16.4.5" }
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
 }
